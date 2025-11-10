@@ -3,96 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Actividad C - Reconocimiento en Tiempo Real</title>
+    <title>Actividad 3 - Modelo Personalizado</title>
     
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Solo ml5 -->
-    <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
+    <!-- Teachable Machine -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    
+    <style>
+        .training-card {
+            transition: transform 0.2s;
+        }
+        .training-card:hover {
+            transform: scale(1.05);
+        }
+        .object-preview {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+    </style>
 </head>
 <body class="bg-light">
+
     <div class="container mt-5">
         <a href="index.html" class="btn btn-secondary mb-4">← Volver al menú</a>
         
         <div class="row justify-content-center">
-            <div class="col-md-8">
-                <h2 class="text-center mb-4">🎯 Reconocimiento de Objetos en Tiempo Real</h2>
-                <p class="text-center lead">Muestra objetos a la cámara para identificarlos</p>
+            <div class="col-lg-10">
+                <h2 class="text-center mb-4">🎓 Reconocimiento con Modelo Personalizado</h2>
+                <p class="text-center lead">Modelo entrenado con Teachable Machine para 5 objetos específicos</p>
                 
-                <div class="card shadow-sm mb-4">
+                <div class="p-3 mb-4 rounded bg-white shadow-sm border">
+                    <h5 class="text-center mb-3">📚 Objetos Entrenados</h5>
+                    <div class="d-flex justify-content-center flex-wrap gap-4" style="font-size: 1.1rem;">
+                        <span>📱 Teléfono</span>
+                        <span>⌨️ Teclado</span>
+                        <span>🖱️ Mouse</span>
+                        <span>🔑 Llave</span>
+                        <span>🪪 DNI</span>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    
                     <div class="card-body text-center">
                         <button id="startButton" class="btn btn-primary btn-lg" onclick="iniciarCamara()">
-                            Iniciar Cámara
+                            🎥 Iniciar Reconocimiento
                         </button>
                         
-                        <!-- Video de la cámara -->
-                        <div class="d-flex justify-content-center mt-3">
-                            <video id="webcam" autoplay playsinline style="max-width: 100%; border-radius: 10px; display: none;"></video>
+                        <div id="webcam-container" class="mt-3 bg-dark rounded" style="min-height: 50px;">
+                            </div>
+
+                        <div id="status" class="mt-3">
+                            <p class="text-muted">Presiona el botón para comenzar</p>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Tarjeta de resultados -->
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Resultados en Tiempo Real</h5>
-                        <div id="results-container" class="text-start">
-                            <p class="text-muted">Presiona "Iniciar Cámara" para comenzar</p>
+
+                    <div class="card-body border-top">
+                        <h5 class="card-title text-center">📊 Resultados en Tiempo Real</h5>
+                        <div id="results-container" class="text-start pt-2" style="min-height: 80px;">
+                            <p class="text-muted text-center">Esperando detección...</p>
                         </div>
                     </div>
-                </div>
 
-                <!-- Controles de síntesis de voz -->
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h5 class="card-title">🔊 Sintetizador de Voz</h5>
-                        
-                        <div class="mb-3">
-                            <label for="voices" class="form-label">Voz</label>
-                            <select class="form-select" id="voices">
-                                <option value="">Seleccione una voz</option>
-                            </select>
-                        </div>
+                    <div class="card-footer bg-light">
+                        <div class="accordion" id="voiceAccordion">
+                            <div class="accordion-item border-0 bg-light">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVoice" aria-expanded="false" aria-controls="collapseVoice">
+                                        🔊 Opciones de Sintetizador de Voz
+                                    </button>
+                                </h2>
+                                <div id="collapseVoice" class="accordion-collapse collapse" data-bs-parent="#voiceAccordion">
+                                    <div class="accordion-body">
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="voices" class="form-label">Voz</label>
+                                                <select class="form-select" id="voices">
+                                                    <option value="">Seleccione una voz</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="pitch" class="form-label">Tono: <span id="pitch-value">1</span></label>
+                                                <input type="range" class="form-range" min="0" max="2" step="0.25" value="1" id="pitch">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="rate" class="form-label">Velocidad: <span id="rate-value">1</span></label>
+                                                <input type="range" class="form-range" min="0" max="2" step="0.25" value="1" id="rate">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="volume" class="form-label">Volumen: <span id="volume-value">1</span></label>
+                                                <input type="range" class="form-range" min="0" max="1" step="0.1" value="1" id="volume">
+                                            </div>
+                                        </div>
 
-                        <div class="mb-3">
-                            <label for="pitch" class="form-label">Tono: <span id="pitch-value">1</span></label>
-                            <input type="range" class="form-range" min="0" max="2" step="0.25" value="1" id="pitch">
-                        </div>
+                                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                            <button class="btn btn-success" id="speak-btn" onclick="hablar()">🔊 Reproducir Resultado</button>
+                                            <button class="btn btn-warning" id="cancel-btn" onclick="cancelar()">🔇 Cancelar</button>
+                                        </div>
 
-                        <div class="mb-3">
-                            <label for="rate" class="form-label">Velocidad: <span id="rate-value">1</span></label>
-                            <input type="range" class="form-range" min="0" max="2" step="0.25" value="1" id="rate">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-
-                        <div class="mb-3">
-                            <label for="volume" class="form-label">Volumen: <span id="volume-value">1</span></label>
-                            <input type="range" class="form-range" min="0" max="1" step="0.1" value="1" id="volume">
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-success" id="speak-btn" onclick="hablar()">🔊 Hablar</button>
-                            <button class="btn btn-warning" id="cancel-btn" onclick="cancelar()">🔇 Cancelar</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    </div> </div> </div>
         </div>
     </div>
 
     <script>
-        let classifier;
-        let video;
+        // URL del modelo de Teachable Machine (carpeta local)
+        const URL = "./my_model/";
+
+        let model, webcam, maxPredictions;
         let currentResults = [];
+        let isRunning = false;
 
         // Referencias a elementos
         const voiceOptions = document.getElementById("voices");
         const pitchInput = document.getElementById("pitch");
         const rateInput = document.getElementById("rate");
         const volumeInput = document.getElementById("volume");
+        const statusDiv = document.getElementById("status");
 
-        // Actualizar valores mostrados de los sliders
+        // ... (El resto de tu JavaScript sigue aquí sin ningún cambio) ...
+        // ... (cargarVoces, iniciarCamara, loop, predict, mostrarResultados, hablar, cancelar) ...
+
+        // Cargar voces
+        function cargarVoces() {
+            const voices = speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                voiceOptions.innerHTML = voices.map((voice, index) => {
+                    // Filtrar para mostrar solo voces en español (opcional, pero útil)
+                    if (voice.lang.startsWith('es-')) {
+                         return `<option value='${index}'>${voice.name} (${voice.lang})</option>`;
+                    }
+                    return '';
+                }).join("");
+                
+                // Si no hay voces en español, mostrar todas
+                if (voiceOptions.innerHTML === "") {
+                     voiceOptions.innerHTML = voices.map((voice, index) => {
+                        return `<option value='${index}'>${voice.name} (${voice.lang})</option>`;
+                    }).join("");
+                }
+            }
+        }
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = cargarVoces;
+        }
+        setTimeout(cargarVoces, 100);
+
+        // Actualizar valores de sliders
         pitchInput.addEventListener("input", (e) => {
             document.getElementById("pitch-value").textContent = e.target.value;
         });
@@ -105,96 +173,140 @@
             document.getElementById("volume-value").textContent = e.target.value;
         });
 
-        // Cargar voces disponibles
-        function cargarVoces() {
-            const voices = speechSynthesis.getVoices();
-            if (voices.length > 0) {
-                voiceOptions.innerHTML = voices.map((voice, index) => {
-                    return `<option value='${index}'>${voice.name} (${voice.lang})</option>`;
-                }).join("");
-            }
-        }
-
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = cargarVoces;
-        }
-        setTimeout(cargarVoces, 100);
-
         async function iniciarCamara() {
             const startButton = document.getElementById("startButton");
+            const webcamContainer = document.getElementById("webcam-container");
             const resultsContainer = document.getElementById("results-container");
             
+            if (isRunning) {
+                // Detener webcam
+                if (webcam) {
+                    webcam.stop();
+                }
+                isRunning = false;
+                startButton.innerHTML = '🎥 Iniciar Reconocimiento';
+                startButton.classList.remove('btn-danger');
+                startButton.classList.add('btn-primary');
+                startButton.disabled = false;
+                webcamContainer.innerHTML = ''; // Limpia el canvas
+                statusDiv.innerHTML = '<p class="text-muted">Sistema detenido</p>';
+                resultsContainer.innerHTML = '<p class="text-muted text-center">Esperando detección...</p>';
+                return;
+            }
+            
             startButton.disabled = true;
-            resultsContainer.innerHTML = '<p class="text-info">Iniciando cámara...</p>';
+            startButton.innerHTML = '⏳ Cargando...';
+            
+            statusDiv.innerHTML = '<p class="text-info">⏳ Cargando modelo...</p>';
             
             try {
-                // Obtener acceso a la cámara
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { width: 640, height: 480 } 
-                });
+                // Cargar el modelo
+                const modelURL = URL + "model.json";
+                const metadataURL = URL + "metadata.json";
                 
-                video = document.getElementById("webcam");
-                video.srcObject = stream;
-                video.style.display = "block";
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
                 
-                resultsContainer.innerHTML = '<p class="text-info">Cargando modelo...</p>';
+                statusDiv.innerHTML = '<p class="text-info">📹 Iniciando cámara...</p>';
                 
-                // Cargar el clasificador
-                classifier = await ml5.imageClassifier("MobileNet", video);
+                // Configurar webcam
+                const flip = true;
+                webcam = new tmImage.Webcam(400, 400, flip); // Un tamaño más cuadrado
+                await webcam.setup(); // solicitar acceso a la cámara
+                await webcam.play();
                 
-                resultsContainer.innerHTML = '<p class="text-success">Clasificando objetos...</p>';
+                // Agregar el canvas al contenedor
+                webcamContainer.innerHTML = '';
+                webcamContainer.appendChild(webcam.canvas);
+                webcam.canvas.style.maxWidth = '100%';
+                webcam.canvas.style.maxHeight = '400px';
+                webcam.canvas.style.borderRadius = '10px';
                 
-                // Iniciar clasificación
-                clasificarContinuo();
+                statusDiv.innerHTML = '<p class="text-success">✅ Sistema activo - Mostrando objetos...</p>';
+                
+                isRunning = true;
+                startButton.disabled = false;
+                startButton.innerHTML = '⏹️ Detener';
+                startButton.classList.remove('btn-primary');
+                startButton.classList.add('btn-danger'); // Botón rojo para detener
+                
+                // Iniciar predicción
+                loop();
                 
             } catch (error) {
                 console.error("Error:", error);
-                resultsContainer.innerHTML = '<p class="text-danger">Error al acceder a la cámara</p>';
-                startButton.disabled = false;
-            }
-        }
-
-        async function clasificarContinuo() {
-            if (!classifier || !video) return;
-            
-            try {
-                const results = await classifier.classify(video);
-                mostrarResultados(results);
+                let errorMsg = '';
                 
-                // Continuar clasificando
-                setTimeout(clasificarContinuo, 1000);
-            } catch (error) {
-                console.error("Error en clasificación:", error);
+                const errorMessage = (error && error.message) ? error.message : String(error);
+                
+                if (errorMessage.includes('denied') || errorMessage.includes('camera')) {
+                    errorMsg = '❌ Error: No se pudo acceder a la cámara.<br><small>• Verifica que hayas dado permisos de cámara al navegador<br>• Revisa la configuración de privacidad de tu navegador<br>• Asegúrate de que ninguna otra aplicación esté usando la cámara</small>';
+                } else if (errorMessage.includes('model') || errorMessage.includes('fetch')) {
+                    errorMsg = `❌ Error: No se pudo cargar el modelo.<br><small>• Asegúrate de que la carpeta "my_model" esté en el mismo directorio<br>• Verifica que contenga: model.json, metadata.json y weights.bin<br>• Usa un servidor local (Live Server, Python http.server, etc.)</small>`;
+                } else {
+                    errorMsg = `❌ Error: ${errorMessage}`;
+                }
+                
+                statusDiv.innerHTML = `<div class="alert alert-danger">${errorMsg}</div>`;
+                startButton.disabled = false;
+                startButton.innerHTML = '🎥 Iniciar Reconocimiento';
+                startButton.classList.add('btn-primary');
+                startButton.classList.remove('btn-danger');
+                isRunning = false;
             }
         }
 
-        function mostrarResultados(results) {
-            console.log("Resultados:", results);
-            currentResults = results;
+        async function loop() {
+            if (!isRunning || !webcam) return;
+            webcam.update();
+            await predict();
+            window.requestAnimationFrame(loop);
+        }
+
+        async function predict() {
+            if (!model || !webcam) return;
+            const prediction = await model.predict(webcam.canvas);
+            mostrarResultados(prediction);
+        }
+
+        function mostrarResultados(predictions) {
+            currentResults = predictions.sort((a, b) => b.probability - a.probability);
             
             const container = document.getElementById("results-container");
             container.innerHTML = "";
 
-            if (!results || results.length === 0) {
-                container.innerHTML = '<p class="text-muted">No se detectaron objetos</p>';
+            if (!predictions || predictions.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">No se detectaron objetos</p>';
                 return;
             }
 
-            // Mostrar top 3
-            results.slice(0, 3).forEach((res, i) => {
-                const porcentaje = (res.confidence * 100).toFixed(2);
+            // Mostrar todas las predicciones
+            currentResults.forEach((pred, i) => {
+                const porcentaje = (pred.probability * 100).toFixed(2);
+                
+                let colorClass = "bg-success";
+                if (pred.probability < 0.3) colorClass = "bg-danger";
+                else if (pred.probability < 0.6) colorClass = "bg-warning";
 
                 const label = document.createElement("p");
                 label.classList.add("fw-semibold", "mb-1", "mt-3");
-                label.innerText = `${i + 1}. ${res.label} (${porcentaje}%)`;
+                
+                // Agregar emoji de trofeo si es la mejor predicción con alta confianza
+                const emoji = (i === 0 && pred.probability > 0.6) ? '🏆' : '';
+                
+                label.innerText = `${emoji} ${pred.className} (${porcentaje}%)`;
 
                 const progressDiv = document.createElement("div");
                 progressDiv.classList.add("progress", "mb-2");
                 progressDiv.style.height = "25px";
 
                 const progressBar = document.createElement("div");
-                progressBar.classList.add("progress-bar", "progress-bar-striped", "progress-bar-animated", "bg-success");
+                progressBar.classList.add("progress-bar", "progress-bar-striped", colorClass);
+                if (i === 0) progressBar.classList.add("progress-bar-animated");
                 progressBar.style.width = `${porcentaje}%`;
+                progressBar.setAttribute('aria-valuenow', porcentaje);
+                progressBar.setAttribute('aria-valuemin', 0);
+                progressBar.setAttribute('aria-valuemax', 100);
 
                 progressDiv.appendChild(progressBar);
                 container.appendChild(label);
@@ -209,27 +321,46 @@
             }
 
             const mejorResultado = currentResults[0];
-            const confianza = (mejorResultado.confidence * 100).toFixed(0);
-            const texto = `Objeto detectado: ${mejorResultado.label}. Confianza: ${confianza} por ciento`;
+            const confianza = (mejorResultado.probability * 100).toFixed(0);
+            
+            let texto;
+            if (mejorResultado.probability > 0.8) { // Aumentar el umbral de confianza
+                texto = `Objeto detectado: ${mejorResultado.className}. Confianza: ${confianza} por ciento.`;
+            } else if (mejorResultado.probability > 0.5) {
+                texto = `Posible objeto: ${mejorResultado.className}. Confianza: ${confianza} por ciento.`;
+            } else {
+                texto = `No se puede identificar con certeza.`;
+            }
 
             const message = new SpeechSynthesisUtterance(texto);
-            const index = voiceOptions.selectedIndex;
-
-            if (index >= 0 && speechSynthesis.getVoices().length > 0) {
-                message.voice = speechSynthesis.getVoices()[index];
-            }
+            const allVoices = speechSynthesis.getVoices();
             
+            if (allVoices.length > 0) {
+                 // Tratar de encontrar una voz en español automáticamente
+                let spanishVoice = allVoices.find(v => v.lang.startsWith('es-'));
+                
+                // Si el usuario seleccionó una, usar esa
+                const selectedIndex = voiceOptions.value;
+                if (selectedIndex) {
+                    message.voice = allVoices[selectedIndex];
+                } else if (spanishVoice) {
+                    message.voice = spanishVoice; // Usar la primera voz en español encontrada
+                }
+                // Si no, usurá la voz por defecto del navegador
+            }
+
             message.pitch = parseFloat(pitchInput.value);
             message.rate = parseFloat(rateInput.value);
             message.volume = parseFloat(volumeInput.value);
-            message.lang = 'es-ES';
 
+            speechSynthesis.cancel(); // Cancelar cualquier habla en curso
             speechSynthesis.speak(message);
         }
 
         function cancelar() {
             speechSynthesis.cancel();
         }
+
     </script>
 </body>
 </html>
