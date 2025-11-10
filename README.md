@@ -21,8 +21,7 @@ Permite al usuario cargar una imagen y obtener su clasificación mediante el mod
 Implementa un sistema de inicio de sesión con validación adicional basada en el reconocimiento de dibujos usando **DoodleNet**.
 
 ### 🆑 Actividad C — Reconocimiento en Tiempo Real
-Utiliza la cámara del dispositivo para reconocer objetos en vivo con **MobileNet**, incorporando además un **sintetizador de voz** para leer los resultados.
-
+Utiliza un modelo personalizado entrenado con **Teachable Machine** para reconocer 5 objetos específicos (teléfono, teclado, mouse, llave y DNI) en tiempo real usando la cámara. Incorpora la SpeechSynthesis API para anunciar los resultados detectados.
 ---
 
 ## 🧠 Tecnologías utilizadas
