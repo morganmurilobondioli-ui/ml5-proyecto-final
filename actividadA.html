@@ -9,105 +9,106 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Solo ml5 -->
+    <!-- Librería ml5.js -->
     <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
 </head>
+
 <body class="bg-light">
     <div class="container text-center mt-5">
-        <a href="index.html" class="btn btn-secondary mb-4">← Volver al menú</a>
+        <!-- Botón para volver al menú -->
+        <a href="index.html" class="btn btn-secondary mb-4">← Regresar al Menú Principal</a>
         
-        <h2 class="mb-4">📷 Reconocimiento de Imágenes</h2>
-        <p class="lead">Sube una imagen para identificarla</p>
+        <h2 class="mb-3">📸 Actividad A - Reconocimiento de Imágenes</h2>
+        <p class="lead">Selecciona una imagen para que el sistema intente identificar su contenido.</p>
         
-        <!-- Input para cargar imagen -->
+        <!-- Cargar imagen -->
         <div class="mb-4">
-            <input type="file" id="imageUpload" accept="image/*" class="form-control mx-auto" style="max-width: 400px;">
+            <input type="file" id="inputImagen" accept="image/*" class="form-control mx-auto" style="max-width: 400px;">
         </div>
         
-        <!-- Imagen preview -->
+        <!-- Vista previa de la imagen -->
         <div class="d-flex justify-content-center mb-4">
-            <img id="imagePreview" style="max-width: 400px; max-height: 400px; display: none; border-radius: 10px;">
+            <img id="vistaPrevia" style="max-width: 400px; max-height: 400px; display: none; border-radius: 10px;">
         </div>
         
-        <!-- Tarjeta de resultados -->
+        <!-- Resultados -->
         <div class="card mx-auto shadow-sm border-0 col-md-6">
             <div class="card-body">
-                <h5 class="card-title">Results</h5>
-                <div id="results-container" class="text-start">
-                    <p class="text-muted">Upload an image to see results</p>
+                <h5 class="card-title">Resultados del Reconocimiento</h5>
+                <div id="contenedorResultados" class="text-start">
+                    <p class="text-muted">Aún no se ha subido ninguna imagen.</p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let classifier;
+        let clasificador;
 
-        // Cargar clasificador cuando la página esté lista
-        ml5.imageClassifier("MobileNet").then(model => {
-            classifier = model;
-            console.log("Model ready!");
-        });
+        // Cargar el modelo de ml5 (MobileNet)
+        ml5.imageClassifier("MobileNet")
+            .then(modelo => {
+                clasificador = modelo;
+                console.log("Modelo cargado correctamente");
+            });
 
-        // Manejar carga de imagen
-        document.getElementById("imageUpload").addEventListener("change", function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.getElementById("imagePreview");
-                    img.src = e.target.result;
-                    img.style.display = "block";
-                    
-                    // Mostrar loading
-                    const container = document.getElementById("results-container");
-                    container.innerHTML = '<p class="text-muted">Analyzing image...</p>';
-                    
-                    // Esperar a que la imagen cargue
-                    img.onload = function() {
-                        classifier.classify(img).then(results => {
-                            gotResult(results);
-                        }).catch(error => {
-                            console.error(error);
-                            const container = document.getElementById("results-container");
-                            container.innerHTML = '<p class="text-danger">Error analyzing image</p>';
-                        });
+        // Evento al seleccionar una imagen
+        document.getElementById("inputImagen").addEventListener("change", function(evento) {
+            const archivo = evento.target.files[0];
+            if (archivo) {
+                const lector = new FileReader();
+                lector.onload = function(e) {
+                    const imagen = document.getElementById("vistaPrevia");
+                    imagen.src = e.target.result;
+                    imagen.style.display = "block";
+
+                    const contenedor = document.getElementById("contenedorResultados");
+                    contenedor.innerHTML = '<p class="text-muted">🔍 Analizando imagen...</p>';
+
+                    // Esperar a que la imagen cargue completamente antes de clasificar
+                    imagen.onload = function() {
+                        clasificador.classify(imagen)
+                            .then(resultados => mostrarResultados(resultados))
+                            .catch(error => {
+                                console.error(error);
+                                contenedor.innerHTML = '<p class="text-danger">⚠️ Error al analizar la imagen.</p>';
+                            });
                     };
-                }
-                reader.readAsDataURL(file);
+                };
+                lector.readAsDataURL(archivo);
             }
         });
 
-        function gotResult(results) {
-            console.log(results);
-            const container = document.getElementById("results-container");
-            container.innerHTML = "";
+        // Función para mostrar los resultados
+        function mostrarResultados(resultados) {
+            console.log(resultados);
+            const contenedor = document.getElementById("contenedorResultados");
+            contenedor.innerHTML = "";
 
-            // Mostrar las 3 primeras predicciones
-            if (results && results.length > 0) {
-                results.slice(0, 3).forEach((res, i) => {
-                    const porcentaje = (res.confidence * 100).toFixed(2);
+            if (resultados && resultados.length > 0) {
+                resultados.slice(0, 3).forEach((resultado, indice) => {
+                    const porcentaje = (resultado.confidence * 100).toFixed(2);
 
-                    const label = document.createElement("p");
-                    label.classList.add("fw-semibold", "mb-1", "mt-3");
-                    label.innerText = `${i + 1}. ${res.label} (${porcentaje}%)`;
+                    const etiqueta = document.createElement("p");
+                    etiqueta.classList.add("fw-semibold", "mb-1", "mt-3");
+                    etiqueta.innerText = `${indice + 1}. ${resultado.label} (${porcentaje}%)`;
 
-                    const progressDiv = document.createElement("div");
-                    progressDiv.classList.add("progress", "mb-2");
+                    const barraProgreso = document.createElement("div");
+                    barraProgreso.classList.add("progress", "mb-2");
 
-                    const progressBar = document.createElement("div");
-                    progressBar.classList.add("progress-bar", "progress-bar-striped", "progress-bar-animated", "bg-success");
-                    progressBar.style.width = `${porcentaje}%`;
-                    progressBar.setAttribute("aria-valuenow", porcentaje);
-                    progressBar.setAttribute("aria-valuemin", "0");
-                    progressBar.setAttribute("aria-valuemax", "100");
+                    const barra = document.createElement("div");
+                    barra.classList.add("progress-bar", "progress-bar-striped", "progress-bar-animated", "bg-success");
+                    barra.style.width = `${porcentaje}%`;
+                    barra.setAttribute("aria-valuenow", porcentaje);
+                    barra.setAttribute("aria-valuemin", "0");
+                    barra.setAttribute("aria-valuemax", "100");
 
-                    progressDiv.appendChild(progressBar);
-                    container.appendChild(label);
-                    container.appendChild(progressDiv);
+                    barraProgreso.appendChild(barra);
+                    contenedor.appendChild(etiqueta);
+                    contenedor.appendChild(barraProgreso);
                 });
             } else {
-                container.innerHTML = '<p class="text-muted">No results found</p>';
+                contenedor.innerHTML = '<p class="text-muted">No se encontraron resultados.</p>';
             }
         }
     </script>
