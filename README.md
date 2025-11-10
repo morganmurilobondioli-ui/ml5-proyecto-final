@@ -22,7 +22,7 @@ Implementa un sistema de inicio de sesión con validación adicional basada en e
 
 ### 🆑 Actividad C — Reconocimiento en Tiempo Real
 Utiliza un modelo personalizado entrenado con **Teachable Machine** para reconocer 5 objetos específicos (teléfono, teclado, mouse, llave y DNI) en tiempo real usando la cámara. Incorpora la SpeechSynthesis API para anunciar los resultados detectados.
----
+
 
 ## 🧠 Tecnologías utilizadas
 - **HTML5**, **CSS3** y **Bootstrap 5**  
